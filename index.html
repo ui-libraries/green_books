@@ -4,10 +4,11 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<!-- leaflet css -->
-	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A==" crossorigin="" />
-	<!-- fonts -->
-	<link href="https://fonts.googleapis.com/css?family=Cutive+Mono|Merriweather:700|Muli:400,700&display=swap" rel="stylesheet">
+	<script>document.documentElement.className = document.documentElement.className.replace('no-js', 'js');</script>
+	<!-- leaflet css (updated 1.7.1 -> 1.9.4) -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+	<!-- fonts (Lato is the font the page's CSS asks for, so it is now actually loaded) -->
+	<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
 	<!-- for markers -->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
 	<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.10.2/css/all.css">
@@ -16,9 +17,83 @@
 
 	<style type="text/css">
 
+		/* ---------- Accessibility design tokens ----------
+		   White text on --ui-accent = 6.8:1 (WCAG AA needs 4.5:1)
+		   Near-black text on white  = 17.4:1                      */
+		:root {
+			--ui-accent: #1b5e96;
+			--ui-accent-hover: #134a77;
+			--ui-text: #1a1a1a;
+			--focus-dark: #1a1a1a;
+			--focus-light: #ffffff;
+		}
+
 		body, html {
 			margin:0;
 			padding:0;
+		}
+
+		body {
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			color: var(--ui-text);
+		}
+
+		/* Visually hidden, but still available to screen readers */
+		.visually-hidden {
+			position: absolute !important;
+			width: 1px;
+			height: 1px;
+			margin: -1px;
+			padding: 0;
+			overflow: hidden;
+			clip: rect(0, 0, 0, 0);
+			white-space: nowrap;
+			border: 0;
+		}
+
+		/* Skip link: hidden until it receives keyboard focus */
+		.skip-link {
+			position: fixed;
+			left: 8px;
+			top: -100px;
+			z-index: 3000;
+			background: #ffffff;
+			color: var(--ui-text);
+			font-weight: 700;
+			padding: 12px 16px;
+			border: 2px solid var(--ui-text);
+			border-radius: 3px;
+		}
+
+		.skip-link:focus {
+			top: 8px;
+		}
+
+		.noscript-message {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			z-index: 3000;
+			margin: 0;
+			padding: 16px;
+			background: #ffffff;
+			color: var(--ui-text);
+			border-bottom: 3px solid var(--ui-text);
+		}
+
+		/* Visible keyboard focus indicator (two-tone so it shows on light and dark backgrounds) */
+		:focus-visible {
+			outline: 3px solid var(--focus-dark);
+			outline-offset: 2px;
+			box-shadow: 0 0 0 2px var(--focus-light);
+		}
+
+		/* The map itself: inset ring, because the map fills the window */
+		.leaflet-container:focus-visible {
+			outline: 4px solid var(--focus-dark);
+			outline-offset: -4px;
+			box-shadow: none;
 		}
 
 		/* Set map parameters */
@@ -30,93 +105,37 @@
 			width: 100%;
 		}
 
-		/* Set and style fonts for text in map */
-		h1 {
-			font-family: 'Lato', sans-serif;
-			font-size: 30px;
-			display: inline-block;
-			color: #ffff00;
-			margin-top: 0.5em;
-			margin-bottom: 0.0em;
-			margin-left: 0.5em;
-			margin-right: 0;
-			font-weight: normal;
-		}
-
-		h2 {
-			font-family: 'Merriweather', serif;
-			font-size: 13px;
-			display: inline-block;
-			color: #f7f4ea;
-			margin-top: 0.25em;
-			margin-bottom: 0.0em;
-			margin-left: 1.25em;
-			margin-right: 0;
-			font-weight: normal;
-		}
-
-		/* Set time slider styles */
-		#slider {
+		/* Toolbar that holds the City Insets menu and the Location list button */
+		.map-toolbar {
 			position: fixed;
-			height: 25px;
-			bottom: 20px;
-			left: 106px;
-			z-index: 700;
-			background-color: #FFFFFF;
-			border-radius: 3px;
-			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
-		}
-
-		/* Set temporal legend styles */
-		#temporal {
-			height: 25px;
-			width: 83px;
-			bottom: 10px;
-			z-index: 700;
-			background-color: #FFFFFF;
-			border-radius: 3px;
-			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
-		}
-
-		/* Set the styles for the text span in the temporal legend */
-		#temporal span {
-			font-family: 'Lato', sans-serif;
-			position: absolute;
-			font-size: 13px;
-			/*font-weight: bold;*/
-			display: inline-block;
-			line-height: 25px;
-			height: 25px;
-			left: 10px;
-		}
-
-		.resize {
-			width: 300px;
-			height: auto;
-		}
-
-		/* Dropdown Button */
-		.dropbtn {
-			font-family: 'Lato', sans-serif;
-			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2);
-      border-radius: 3px;
-			background-color: #3498DB;
-			color: white;
-			padding: 10px;
-			font-size: 14px;
-			white-space: nowrap;
-			max-width: content;
-			border: none;
-			cursor: pointer;
-			position: relative;
+			top: 10px;
 			left: 54px;
-			top: 12px;
+			z-index: 1100;
+			display: flex;
+			flex-wrap: wrap;
+			align-items: flex-start;
+			gap: 8px;
+			max-width: calc(100% - 130px);
 		}
 
-		/* Dropdown button on hover & focus */
-		.dropbtn:hover,
-		.dropbtn:focus {
-			background-color: #2980B9;
+		/* Buttons (44px minimum touch target) */
+		.ui-btn {
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			font-size: 1rem;
+			line-height: 1.25;
+			min-height: 44px;
+			padding: 10px 14px;
+			background-color: var(--ui-accent);
+			color: #ffffff;
+			border: none;
+			border-radius: 3px;
+			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2);
+			white-space: nowrap;
+			cursor: pointer;
+		}
+
+		.ui-btn:hover {
+			background-color: var(--ui-accent-hover);
 		}
 
 		/* The container <div> - needed to position the dropdown content */
@@ -125,132 +144,255 @@
 			display: inline-block;
 		}
 
-		/* Dropdown Content (Hidden by Default) */
+		/* Dropdown Content (hidden by default) */
 		.dropdown-content {
 			display: none;
 			position: absolute;
-			top: 50px;
-			left: 54px;
+			top: calc(100% + 6px);
+			left: 0;
+			margin: 0;
+			padding: 0;
+			list-style: none;
 			background-color: #f1f1f1;
 			white-space: nowrap;
-			min-width: content;
+			min-width: 100%;
+			max-height: calc(100vh - 80px);
+			max-height: calc(100dvh - 80px);
+			overflow-y: auto;
 			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2);
 			border-radius: 3px;
 			z-index: 1000;
 		}
 
-		/* Links inside the dropdown */
-		.dropdown-content a {
-			font-family: 'Lato', sans-serif;
-			font-size: 12px;
-			color: black;
-			padding: 8px 8px 8px 8px;
-			text-decoration: none;
+		/* Show the dropdown menu (JS adds this class when the button is activated) */
+		.dropdown-content.show {
 			display: block;
-			box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.1);
+		}
+
+		/* Items inside the dropdown are real buttons so they work with keyboard and screen readers */
+		.dropdown-content button {
+			display: block;
+			width: 100%;
+			min-height: 44px;
+			padding: 10px 14px;
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			font-size: 1rem;
+			text-align: left;
+			color: #000000;
+			background: transparent;
+			border: none;
+			border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 			cursor: pointer;
 		}
 
-		/* Change color of dropdown links on hover */
-		.dropdown-content a:hover {
-			background-color: #ddd
+		.dropdown-content li:last-child button {
+			border-bottom: none;
 		}
 
-		/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
-		.show {
-			display: block;
+		.dropdown-content button:hover {
+			background-color: #dddddd;
+		}
+
+		.dropdown-content button:focus-visible {
+			outline-offset: -3px;
+			box-shadow: none;
+		}
+
+		/* Set time slider styles */
+		#slider {
+			position: fixed;
+			box-sizing: border-box;
+			height: 44px;
+			bottom: 24px;
+			left: 116px;
+			z-index: 1001;
+			display: flex;
+			align-items: center;
+			padding: 0 12px;
+			background-color: #FFFFFF;
+			border-radius: 3px;
+			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
+		}
+
+		#slider input[type="range"] {
+			width: 200px;
+			margin: 0;
+			accent-color: var(--ui-accent);
+			cursor: pointer;
+		}
+
+		/* Set temporal legend styles */
+		#temporal {
+			box-sizing: border-box;
+			height: 44px;
+			width: 96px;
+			margin-bottom: 24px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background-color: #FFFFFF;
+			color: var(--ui-text);
+			border-radius: 3px;
+			box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
+		}
+
+		/* Set the styles for the text span in the temporal legend */
+		#temporal span {
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			font-size: 1rem;
+			font-weight: 700;
+		}
+
+		/* Popup content */
+		.leaflet-popup-content {
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			font-size: 1rem;
+			line-height: 1.4;
+			color: var(--ui-text);
+		}
+
+		.gb-popup h3 {
+			margin: 0 0 0.5em 0;
+			font-size: 1.125rem;
+			line-height: 1.25;
+		}
+
+		.gb-popup dl {
+			margin: 0;
+		}
+
+		.gb-popup dt {
+			font-weight: 700;
+		}
+
+		.gb-popup dd {
+			margin: 0 0 0.5em 0;
+		}
+
+		.gb-popup p {
+			margin: 0.5em 0 0 0;
+		}
+
+		.gb-popup a {
+			color: #0b4f8a;
+			text-decoration: underline;
+		}
+
+		.resize {
+			width: 300px;
+			max-width: 100%;
+			height: auto;
+		}
+
+		/* Layers control: readable text and larger click targets */
+		.leaflet-control-layers {
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			font-size: 1rem;
+		}
+
+		.leaflet-control-layers label {
+			padding: 3px 0;
+		}
+
+		.leaflet-control-layers-selector {
+			width: 18px;
+			height: 18px;
+		}
+
+		/* Location list dialog */
+		#locations-dialog {
+			width: min(900px, calc(100% - 24px));
+			max-height: calc(100vh - 24px);
+			max-height: calc(100dvh - 24px);
+			box-sizing: border-box;
+			padding: 0;
+			color: var(--ui-text);
+			background: #ffffff;
+			border: 2px solid var(--ui-text);
+			border-radius: 6px;
+			font-family: 'Lato', Arial, Helvetica, sans-serif;
+			font-size: 1rem;
+		}
+
+		#locations-dialog::backdrop {
+			background: rgba(0, 0, 0, 0.6);
+		}
+
+		.dialog-header {
+			position: sticky;
+			top: 0;
+			z-index: 1;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			gap: 12px;
+			padding: 12px 16px;
+			background: #ffffff;
+			border-bottom: 1px solid #767676;
+		}
+
+		.dialog-header h2 {
+			margin: 0;
+			font-size: 1.25rem;
+			line-height: 1.25;
+		}
+
+		.dialog-body {
+			padding: 0 16px 16px 16px;
+		}
+
+		.table-scroll {
+			overflow-x: auto;
+		}
+
+		.locations-table {
+			width: 100%;
+			border-collapse: collapse;
+		}
+
+		.locations-table caption {
+			padding: 12px 0;
+			text-align: left;
+			font-weight: 700;
+		}
+
+		.locations-table th,
+		.locations-table td {
+			padding: 8px 10px;
+			text-align: left;
+			vertical-align: top;
+			border-bottom: 1px solid #767676;
+		}
+
+		.locations-table th {
+			background: #f1f1f1;
+		}
+
+		.locations-table .ui-btn {
+			min-height: 44px;
+			white-space: normal;
 		}
 
 		@media only screen and (max-width: 1000px) {
 
-			/* Set time slider styles */
-			#slider {
-				position: fixed;
-				width: 98px;
-				height: 25px;
-				bottom: 20px;
-				left: 106px;
-				z-index: 500;
-				background-color: #FFFFFF;
-				border-radius: 3px;
-				box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.3);
+			#slider input[type="range"] {
+				width: 150px;
 			}
 
-			.slider {
-				width: 93px;
+			.map-toolbar {
+				max-width: calc(100% - 70px);
 			}
 
-			/* Dropdown Button */
-			.dropbtn {
-				font-family: 'Lato', sans-serif;
-				box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2);
-	      border-radius: 3px;
-				background-color: #3498DB;
-				color: white;
-				padding: 7px;
-				font-size: 11px;
-				white-space: nowrap;
-				max-width: content;
-				border: none;
-				cursor: pointer;
-				position: relative;
-				left: 54px;
-				top: 12px;
+		}
+
+		/* Respect the operating-system "reduce motion" setting */
+		@media (prefers-reduced-motion: reduce) {
+			*, *::before, *::after {
+				animation-duration: 0.01ms !important;
+				animation-iteration-count: 1 !important;
+				transition-duration: 0.01ms !important;
+				scroll-behavior: auto !important;
 			}
-
-			/* Dropdown button on hover & focus */
-			.dropbtn:hover,
-			.dropbtn:focus {
-				background-color: #2980B9;
-			}
-
-			/* The container <div> - needed to position the dropdown content */
-			.dropdown {
-				position: relative;
-				display: inline-block;
-			}
-
-			/* Dropdown Content (Hidden by Default) */
-			.dropdown-content {
-				display: none;
-				position: absolute;
-				top: 40px;
-				left: 54px;
-				background-color: #f1f1f1;
-				white-space: nowrap;
-				min-width: content;
-				box-shadow: 0px 0px 0px 2px rgba(0, 0, 0, 0.2);
-				border-radius: 3px;
-				z-index: 1000;
-			}
-
-			/* Links inside the dropdown */
-			.dropdown-content a {
-				font-family: 'Lato', sans-serif;
-				font-size: 9px;
-				color: black;
-				padding: 5px 5px 5px 5px;
-				text-decoration: none;
-				display: block;
-				box-shadow: 0px 0px 0px 0.5px rgba(0, 0, 0, 0.1);
-				cursor: pointer;
-			}
-
-			/* Change color of dropdown links on hover */
-			.dropdown-content a:hover {
-				background-color: #ddd
-			}
-
-			/* Show the dropdown menu (use JS to add this class to the .dropdown-content container when the user clicks on the dropdown button) */
-			.show {
-				display: block;
-			}
-
-			 .leaflet-control-layers-expanded {
-				 font-family: 'Lato', sans-serif;
-				 font-size: 10px;
-			 }
-
 		}
 	</style>
 
@@ -258,40 +400,72 @@
 </head>
 
 <body>
-	<!-- map -->
-	<div id="map"></div>
-	<!-- dropdown menu -->
-	<div class="dropdown">
-		<button onclick="myFunction()" class="dropbtn">City Insets</button>
-		<div id="myDropdown" class="dropdown-content">
-			<a onclick="zoom2latLng1();">Cedar Rapids</a>
-			<a onclick="zoom2latLng2();">Clinton</a>
-			<a onclick="zoom2latLng3();">Council Bluffs</a>
-			<a onclick="zoom2latLng4();">Davenport</a>
-			<a onclick="zoom2latLng5();">Des Moines</a>
-			<a onclick="zoom2latLng6();">Dubuque</a>
-			<a onclick="zoom2latLng7();">Iowa City</a>
-			<a onclick="zoom2latLng8();">Keokuk</a>
-			<a onclick="zoom2latLng9();">Newton</a>
-			<a onclick="zoom2latLng10();">Ottumwa</a>
-			<a onclick="zoom2latLng11();">Sioux City</a>
-			<a onclick="zoom2latLng12();">Waterloo</a>
-			<a onclick="zoom2latLng13();">Main Map</a>
+	<a class="skip-link" href="#map">Skip to map</a>
+	<noscript>
+		<p class="noscript-message">This interactive map needs JavaScript. Please turn on JavaScript in your browser to view the Iowa Green Books Map.</p>
+	</noscript>
+
+	<main>
+		<h1 class="visually-hidden">Iowa Green Books Map</h1>
+		<p id="map-help" class="visually-hidden">Interactive map of Green Book listings in Iowa from 1939 to 1966. When the map has focus, use the arrow keys to pan and the plus and minus keys to zoom. Use the Tab key to move between locations and press Enter to open a location's details. Press Escape to close details. A text list of the same locations is available from the Location list button.</p>
+
+		<!-- map tools -->
+		<div class="map-toolbar" role="group" aria-label="Map tools">
+			<!-- dropdown menu -->
+			<div class="dropdown">
+				<button type="button" id="insets-button" class="dropbtn ui-btn" aria-expanded="false" aria-controls="myDropdown">City Insets</button>
+				<ul id="myDropdown" class="dropdown-content">
+					<li><button type="button" data-lat="41.983056" data-lng="-91.668611" data-zoom="13">Cedar Rapids</button></li>
+					<li><button type="button" data-lat="41.846944" data-lng="-90.207222" data-zoom="13">Clinton</button></li>
+					<li><button type="button" data-lat="41.253" data-lng="-95.862" data-zoom="13">Council Bluffs</button></li>
+					<li><button type="button" data-lat="41.543056" data-lng="-90.590833" data-zoom="13">Davenport</button></li>
+					<li><button type="button" data-lat="41.590833" data-lng="-93.620833" data-zoom="13">Des Moines</button></li>
+					<li><button type="button" data-lat="42.5" data-lng="-90.69" data-zoom="13">Dubuque</button></li>
+					<li><button type="button" data-lat="41.66" data-lng="-91.53" data-zoom="13">Iowa City</button></li>
+					<li><button type="button" data-lat="40.397222" data-lng="-91.385" data-zoom="13">Keokuk</button></li>
+					<li><button type="button" data-lat="41.698611" data-lng="-93.046944" data-zoom="13">Newton</button></li>
+					<li><button type="button" data-lat="41.013056" data-lng="-92.414722" data-zoom="13">Ottumwa</button></li>
+					<li><button type="button" data-lat="42.498056" data-lng="-96.395556" data-zoom="13">Sioux City</button></li>
+					<li><button type="button" data-lat="42.492436" data-lng="-92.346161" data-zoom="13">Waterloo</button></li>
+					<li><button type="button" data-lat="42.0667" data-lng="-93.4" data-zoom="7">Main Map</button></li>
+				</ul>
+			</div>
+			<button type="button" id="list-button" class="ui-btn" aria-haspopup="dialog">Location list</button>
 		</div>
-	</div>
-	<!-- ui slider -->
-	<div id="slider" class="leaflet-control">
-		<!-- Use the first and last year of the time data as the min and max. Set the initial value as the first year. Set the steps at one year. -->
-		<input type="range" min="1939" max="1966" value="1939" step="1" class="slider" />
-	</div>
-	<!-- temporal legend -->
-	<div id='temporal'>
-		<!--<h5 class='txt-bold'><span id='span'></span></h5>-->
-		<span class='txt-bold' id='span'></span>
-	</div>
-	<!--</main>-->
-	<!-- leaflet js -->
-	<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js" integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA==" crossorigin=""></script>
+
+		<!-- ui slider -->
+		<div id="slider" class="leaflet-control">
+			<label for="year-slider" class="visually-hidden">Year, from 1939 to 1966</label>
+			<!-- Use the first and last year of the time data as the min and max. Set the initial value as the first year. Set the steps at one year. -->
+			<input type="range" id="year-slider" min="1939" max="1966" value="1939" step="1" class="slider" />
+		</div>
+		<!-- temporal legend -->
+		<div id='temporal'>
+			<span class='txt-bold' id='span'></span>
+		</div>
+
+		<!-- polite announcements for screen reader users (year changes, map moves) -->
+		<div id="sr-status" class="visually-hidden" role="status" aria-live="polite" aria-atomic="true"></div>
+
+		<!-- map -->
+		<div id="map" role="region" aria-label="Interactive map of Iowa Green Book locations" aria-describedby="map-help"></div>
+	</main>
+
+	<!-- text alternative to the map: table of the locations currently shown -->
+	<dialog id="locations-dialog" aria-labelledby="locations-title">
+		<div class="dialog-header">
+			<h2 id="locations-title">Location list</h2>
+			<button type="button" id="locations-close" class="ui-btn">Close</button>
+		</div>
+		<div class="dialog-body">
+			<div class="table-scroll" tabindex="0" role="region" aria-labelledby="locations-title">
+				<table id="locations-table" class="locations-table"></table>
+			</div>
+		</div>
+	</dialog>
+
+	<!-- leaflet js (updated 1.7.1 -> 1.9.4) -->
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 	<!-- for the markers -->
 	<script src="js/leaflet.extra-markers.min.js"></script>
 	<script src="js/jquery-2.1.1.js"></script>
@@ -348,8 +522,15 @@
 
 		var insets = L.layerGroup([basemap, insets1952]);
 
-		var historic = L.tileLayer('');
-		var contemporary = L.tileLayer('');
+		// dummy base layers (layer groups, so the map does not request empty tiles)
+		var historic = L.layerGroup();
+		var contemporary = L.layerGroup();
+
+		// honor the operating-system "reduce motion" setting
+		const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+		function motionAllowed() {
+			return !reducedMotionQuery.matches;
+		}
 
 		// dummy base layers
 		var baseMaps = {
@@ -360,7 +541,10 @@
 		var map = L.map('map', {
 			//layers: [overmap1]
 			maxZoom: 13,
-			tap:false
+			tap:false,
+			zoomAnimation: motionAllowed(),
+			fadeAnimation: motionAllowed(),
+			markerZoomAnimation: motionAllowed()
 		}).setView([42.0667, -93.4], 7);
 
 		historic.addTo(map);
@@ -392,80 +576,78 @@
 			zoomMap(mapZoom, currentYear);
 		});
 
+		/* START SCREEN READER ANNOUNCEMENTS */
+		const srStatus = document.getElementById('sr-status');
+		function announce(message) {
+			// clear first so repeated identical messages are still announced
+			srStatus.textContent = '';
+			window.setTimeout(function() {
+				srStatus.textContent = message;
+			}, 50);
+		}
+		function debounce(fn, wait) {
+			let timer;
+			return function() {
+				const args = arguments;
+				window.clearTimeout(timer);
+				timer = window.setTimeout(function() {
+					fn.apply(null, args);
+				}, wait);
+			};
+		}
+		/* END SCREEN READER ANNOUNCEMENTS */
+
 		/* START DROPDOWN CODE */
-		/* When the user clicks on the button,
-		toggle between hiding and showing the dropdown content */
-		function myFunction() {
-		  document.getElementById("myDropdown").classList.toggle("show");
-		};
+		const insetsButton = document.getElementById('insets-button');
+		const insetsMenu = document.getElementById('myDropdown');
+		const insetsWrapper = insetsButton.parentNode;
 
-		// Close the dropdown menu if the user clicks outside of it
-		window.onclick = function(event) {
-		  if (!event.target.matches('.dropbtn')) {
-		    var dropdowns = document.getElementsByClassName("dropdown-content");
-		    var i;
-		    for (i = 0; i < dropdowns.length; i++) {
-		      var openDropdown = dropdowns[i];
-		      if (openDropdown.classList.contains('show')) {
-		        openDropdown.classList.remove('show');
-		      }
-		    }
-		  }
-		};
+		// open or close the City Insets menu and keep aria-expanded in sync
+		function setMenuOpen(open, returnFocus) {
+			insetsMenu.classList.toggle('show', open);
+			insetsButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+			if (!open && returnFocus) {
+				insetsButton.focus();
+			}
+		}
+
+		insetsButton.addEventListener('click', function() {
+			setMenuOpen(!insetsMenu.classList.contains('show'), false);
+		});
+
+		// choose a city (data attributes replace the 13 old zoom2latLng functions)
+		insetsMenu.addEventListener('click', function(event) {
+			const item = event.target.closest('button[data-lat]');
+			if (!item) {
+				return;
+			}
+			const zoom = Number(item.getAttribute('data-zoom'));
+			map.flyTo([Number(item.getAttribute('data-lat')), Number(item.getAttribute('data-lng'))], zoom, {
+				animate: motionAllowed()
+			});
+			announce(zoom < 10 ? 'Map zoomed out to all of Iowa.' : 'Map moved to ' + item.textContent + '.');
+			setMenuOpen(false, true);
+		});
+
+		// Escape closes the menu and returns focus to its button
+		document.addEventListener('keydown', function(event) {
+			if (event.key === 'Escape' && insetsMenu.classList.contains('show')) {
+				setMenuOpen(false, true);
+			}
+		});
+
+		// close the menu when the user clicks elsewhere or tabs out of it
+		document.addEventListener('click', function(event) {
+			if (!insetsWrapper.contains(event.target)) {
+				setMenuOpen(false, false);
+			}
+		});
+		document.addEventListener('focusin', function(event) {
+			if (insetsMenu.classList.contains('show') && !insetsWrapper.contains(event.target)) {
+				setMenuOpen(false, false);
+			}
+		});
 		/* END DROPDOWN CODE */
-
-		// zoom to functions for inset dropdown
-		function zoom2latLng1() {
-			map.flyTo([41.983056, -91.668611], 13); // zoom to Cedar Rapids
-		};
-
-		function zoom2latLng2() {
-			map.flyTo([41.846944, -90.207222], 13); // zoom to Clinton
-		};
-
-		function zoom2latLng3() {
-			map.flyTo([41.253, -95.862], 13); // zoom to Council Bluffs
-		};
-
-		function zoom2latLng4() {
-			map.flyTo([41.543056, -90.590833], 13); // zoom to Davenport
-		};
-
-		function zoom2latLng5() {
-			map.flyTo([41.590833, -93.620833], 13); // zoom to Des Moines
-		};
-
-		function zoom2latLng6() {
-			map.flyTo([42.5, -90.69], 13); // zoom to Dubuque
-		};
-
-		function zoom2latLng7() {
-			map.flyTo([41.66, -91.53], 13); // zoom to Iowa City
-		};
-
-		function zoom2latLng8() {
-			map.flyTo([40.397222, -91.385], 13); // zoom to Keokuk
-		};
-
-		function zoom2latLng9() {
-			map.flyTo([41.698611, -93.046944], 13); // zoom to Newton
-		};
-
-		function zoom2latLng10() {
-			map.flyTo([41.013056, -92.414722], 13); // zoom to Ottumwa
-		};
-
-		function zoom2latLng11() {
-			map.flyTo([42.498056, -96.395556], 13); // zoom to Sioux City
-		};
-
-		function zoom2latLng12() {
-			map.flyTo([42.492436, -92.346161], 13); // zoom to Waterloo
-		};
-
-		function zoom2latLng13() {
-			map.flyTo([42.0667, -93.4], 7); // zoom out to Iowa
-		};
 
 		// Add a function to call in the icons
 		function getIcon(d) {
@@ -559,16 +741,212 @@
 			collapsed: isCollapsed
 		}).addTo(map);
 
+		// escape text from the data before putting it in HTML
+		function escapeHtml(value) {
+			if (value === undefined || value === null) {
+				return '';
+			}
+			return String(value)
+				.replace(/&/g, '&amp;')
+				.replace(/</g, '&lt;')
+				.replace(/>/g, '&gt;')
+				.replace(/"/g, '&quot;')
+				.replace(/'/g, '&#39;');
+		}
+
+		// text name for a marker, used for screen readers and the hover tooltip
+		function markerLabel(props) {
+			return props.Owner + ', ' + props.Type + ', ' + props.Date + ' Green Book';
+		}
+
+		// build popup content as real headings and a description list instead of <b> and <br>
+		function buildPopupHtml(props) {
+			function row(label, value) {
+				return value ? '<dt>' + label + '</dt><dd>' + escapeHtml(value) + '</dd>' : '';
+			}
+			let html = '<div class="gb-popup"><h3>' + escapeHtml(props.Owner) + '</h3><dl>' +
+				row('Green Book year', props.Date) +
+				row('Amenity', props.Type) +
+				row('Address', props.Address) +
+				'</dl>';
+			if (props.Image != undefined) {
+				// ImageAlt is an optional new field in the data; the fallback is a generic description
+				const alt = props.ImageAlt || ('Image related to ' + props.Owner + ' (' + props.Type + ')');
+				html += '<img class="resize" src="' + escapeHtml(props.Image) + '" alt="' + escapeHtml(alt) + '">';
+				if (props.Source && !/^\s*javascript:/i.test(props.Source)) {
+					html += '<p><a href="' + escapeHtml(props.Source) + '" target="_blank" rel="noopener noreferrer">Visit the image source (opens in a new tab)</a></p>';
+				}
+			}
+			return html + '</div>';
+		}
+
+		// label the layers control for assistive technology
+		(function() {
+			const container = controlLayers.getContainer();
+			container.setAttribute('role', 'group');
+			container.setAttribute('aria-label', 'Map layers');
+			const base = container.querySelector('.leaflet-control-layers-base');
+			const over = container.querySelector('.leaflet-control-layers-overlays');
+			if (base) {
+				base.setAttribute('role', 'radiogroup');
+				base.setAttribute('aria-label', 'Map style');
+			}
+			if (over) {
+				over.setAttribute('role', 'group');
+				over.setAttribute('aria-label', 'Amenity types to show');
+			}
+		})();
+
+		// lookup from the data's Type value to its layer group (used by the list view and announcements)
+		const layerGroupsByType = {
+			"Automotives": autos,
+			"Barber Shop": barbers,
+			"Beauty Parlor": parlors,
+			"Cafe": cafes,
+			"Drug Store": druggists,
+			"Factory Tour": factories,
+			"Garage": garages,
+			"Hotel": hotels,
+			"Motel": motels,
+			"Publication": publications,
+			"Restaurant": restaurants,
+			"Service Station": stations,
+			"Tailor": tailors,
+			"Tavern": taverns,
+			"Tourist Home": homes
+		};
+
+		// markers currently shown on the map (selected year + checked amenity layers)
+		function getVisibleMarkers() {
+			const markers = [];
+			Object.keys(layerGroupsByType).forEach(function(type) {
+				const group = layerGroupsByType[type];
+				if (map.hasLayer(group)) {
+					group.eachLayer(function(layer) {
+						markers.push(layer);
+					});
+				}
+			});
+			return markers;
+		}
+
+		// tell screen reader users how many locations are showing (skipped during first page load)
+		let announcementsEnabled = false;
+		const announceVisibleCount = debounce(function(year) {
+			if (!announcementsEnabled) {
+				return;
+			}
+			const count = getVisibleMarkers().length;
+			announce('Year ' + year + ': ' + count + (count === 1 ? ' location' : ' locations') + ' shown on the map.');
+		}, 600);
+		map.on('overlayadd overlayremove', function() {
+			announceVisibleCount($('.slider').val());
+		});
+
+		/* START LOCATION LIST (text alternative to the map) */
+		const locationsDialog = document.getElementById('locations-dialog');
+		const locationsTable = document.getElementById('locations-table');
+
+		function buildLocationsTable() {
+			const year = $('.slider').val();
+			const markers = getVisibleMarkers().sort(function(a, b) {
+				const pa = a.feature.properties, pb = b.feature.properties;
+				return String(pa.Type).localeCompare(String(pb.Type)) || String(pa.Owner).localeCompare(String(pb.Owner));
+			});
+			locationsTable.innerHTML = '';
+
+			const caption = document.createElement('caption');
+			caption.textContent = markers.length ?
+				year + ' Green Book: ' + markers.length + (markers.length === 1 ? ' location' : ' locations') + ' (use the layer control on the map to change which amenity types are included)' :
+				'No locations are shown for ' + year + '. Try another year or turn on more amenity types in the layer control.';
+			locationsTable.appendChild(caption);
+			if (!markers.length) {
+				return;
+			}
+
+			const head = locationsTable.createTHead().insertRow();
+			['Name', 'Amenity', 'Address', ''].forEach(function(text, i) {
+				const th = document.createElement('th');
+				th.scope = 'col';
+				if (i === 3) {
+					th.innerHTML = '<span class="visually-hidden">Show on map</span>';
+				} else {
+					th.textContent = text;
+				}
+				head.appendChild(th);
+			});
+
+			const body = locationsTable.createTBody();
+			markers.forEach(function(marker) {
+				const props = marker.feature.properties;
+				const tr = body.insertRow();
+				tr.insertCell().textContent = props.Owner || '';
+				tr.insertCell().textContent = props.Type || '';
+				tr.insertCell().textContent = props.Address || '';
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.className = 'ui-btn';
+				button.appendChild(document.createTextNode('Show on map'));
+				const hidden = document.createElement('span');
+				hidden.className = 'visually-hidden';
+				hidden.textContent = ': ' + props.Owner;
+				button.appendChild(hidden);
+				button.addEventListener('click', function() {
+					locationsDialog.close();
+					// jump (no animation) to the marker and open its details
+					map.setView(marker.getLatLng(), Math.max(map.getZoom(), 12), { animate: false });
+					marker.openPopup();
+				});
+				tr.insertCell().appendChild(button);
+			});
+		}
+
+		document.getElementById('list-button').addEventListener('click', function() {
+			buildLocationsTable();
+			if (typeof locationsDialog.showModal === 'function') {
+				locationsDialog.showModal();
+			} else {
+				locationsDialog.setAttribute('open', '');
+			}
+		});
+		document.getElementById('locations-close').addEventListener('click', function() {
+			locationsDialog.close();
+		});
+		// clicking the dimmed backdrop also closes the dialog
+		locationsDialog.addEventListener('click', function(event) {
+			if (event.target === locationsDialog) {
+				locationsDialog.close();
+			}
+		});
+		/* END LOCATION LIST */
+
 		const pointToLayerOpts = function(feature, ll) {
+			const label = markerLabel(feature.properties);
+			const color = getColor(feature.properties.Type);
 			// return a marker
-			return L.marker(ll, {
+			const marker = L.marker(ll, {
 				icon: L.ExtraMarkers.icon({
 					icon: getIcon(feature.properties.Type),
 					prefix: 'fas',
-					markerColor: getColor(feature.properties.Type),
-					iconColor: 'white'
-				})
-			})
+					markerColor: color,
+					// white glyphs are too faint on yellow and orange markers
+					iconColor: (color === 'yellow' || color === 'orange') ? '#000000' : 'white'
+				}),
+				title: label,
+				alt: label,
+				keyboard: true
+			});
+			// once the marker is in the page, give it an accessible name and hide the decorative icon font
+			marker.on('add', function() {
+				const el = marker.getElement();
+				if (el) {
+					el.setAttribute('aria-label', label);
+					el.querySelectorAll('i').forEach(function(icon) {
+						icon.setAttribute('aria-hidden', 'true');
+					});
+				}
+			});
+			return marker;
 		};
 
 		const onEachFeatureOpts = function(feature, layer) {
@@ -578,18 +956,30 @@
 			let type = props.Type;
 			// define the year attribute
 			let year = props.Date;
-			// define popup image
-			if (props.Image != undefined) {
-				var pimage = "<br><img class='resize' src='" + props.Image + "'" + "/>" + '<br>Click <a href="' + props.Source + '" target="_blank">here</a> to visit the image source.<br>';
-			} else {
-				var pimage = '';
-			}
 			// bind a popup to the markers
-			layer.bindPopup("<b>" + props.Date + " Green Book" + "<br>" + props.Owner + "</b>" +
-				"<br>Amenity: " + props.Type +
-				"<br>Address: " + props.Address + // add website
-				pimage
-			);
+			layer.bindPopup(buildPopupHtml(props));
+			// when a popup opens, move keyboard/screen reader focus into it
+			layer.on('popupopen', function(e) {
+				const el = e.popup.getElement();
+				if (!el) {
+					return;
+				}
+				el.setAttribute('role', 'dialog');
+				el.setAttribute('aria-label', 'Details for ' + props.Owner);
+				const content = el.querySelector('.leaflet-popup-content');
+				if (content) {
+					content.setAttribute('tabindex', '-1');
+					content.focus({ preventScroll: true });
+				}
+			});
+			// when it closes, hand focus back to the marker (unless the user already moved on)
+			layer.on('popupclose', function() {
+				const icon = layer.getElement && layer.getElement();
+				const active = document.activeElement;
+				if (icon && document.body.contains(icon) && (!active || active === document.body)) {
+					icon.focus({ preventScroll: true });
+				}
+			});
 			/*
 			layer.on('mouseover', function(e) {
 				this.openPopup();
@@ -665,6 +1055,7 @@
 			createTemporalLegend(currentYear); // calls the createTemporalLegend function
 			updatePoints(gbPts, /*autoPts, barberPts, beautyPts, cafePts, drugPts, factoryPts, garagePts, hotelPts, motelPts, pubPts, restPts, servicePts, tailorPts, tavernPts, touristPts, */
 			currentYear); // calls the updatePoints function to update the points
+			announcementsEnabled = true; // initial load is done, announce changes from here on
 		});
 
 		// call the UI slider with a function called "sequenceUI"
@@ -684,30 +1075,35 @@
 		}; // End sequenceUI function
 
 		// Add a temporal legend in sync with the UI slider
+		var temporalLegendAdded = false; // var (hoisted) so the data-loading callback can safely read it
 		function createTemporalLegend(currentYear) { // feed it the selected year
 
-			// define the temporal legend with a Leaflet control
-			const temporalLegend = L.control({
-				position: 'bottomleft' // place the temporal legend at bottom left corner
-			});
-
-			// when added to the map
-			temporalLegend.onAdd = function(map) {
-
-				const div = L.DomUtil.get("temporal"); // get the div
-
-				// disable the mouse events
-				L.DomEvent.addListener(div, 'mousedown', function(e) {
-					L.DomEvent.stopPropagation(e);
+			// only add the legend control to the map once (it used to be re-added on every slider move)
+			if (!temporalLegendAdded) {
+				// define the temporal legend with a Leaflet control
+				const temporalLegend = L.control({
+					position: 'bottomleft' // place the temporal legend at bottom left corner
 				});
 
-				return div; // return the div from the function
+				// when added to the map
+				temporalLegend.onAdd = function(map) {
 
+					const div = L.DomUtil.get("temporal"); // get the div
+
+					// disable the mouse events
+					L.DomEvent.addListener(div, 'mousedown', function(e) {
+						L.DomEvent.stopPropagation(e);
+					});
+
+					return div; // return the div from the function
+
+				}
+
+				temporalLegend.addTo(map); // add the temporal legend to the map
+				temporalLegendAdded = true;
 			}
 
-			$('#temporal span').html("Year: " + currentYear); // change grade value to that currently selected by UI slider
-
-			temporalLegend.addTo(map); // add the temporal legend to the map
+			$('#temporal span').text("Year: " + currentYear); // change year value to that currently selected by UI slider
 
 		}; // End createTemporalLegend function
 
@@ -874,6 +1270,9 @@
 					homes.removeLayer(layer);
 				}
 			});
+
+			// let screen reader users know what changed
+			announceVisibleCount(currentYear);
 
 		}; // End updatePoints function
 
